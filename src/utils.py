@@ -17,15 +17,21 @@ def to_idx(action: str) -> (int, int, int, int):
     return r, c, r_, c_
 
 
-def index_to_action(x, y, x_, y_):
+def to_str(r, c, r_, c_):
     """Converts index to action in string format
 
     Args:
-        x (int): 
-        y (int): 
-        x_ (int):
-        y_ (int):
+        r (int):
+        c (int):
+        r_ (int):
+        c_ (int):
 
     Returns:
         action(str): String format action
     """
+    r = str(r + 1)
+    c = chr(c + 65)
+    r_ = str(r_ + 1)
+    c_ = chr(c_ + 65)
+
+    return r + c + r_ + c_

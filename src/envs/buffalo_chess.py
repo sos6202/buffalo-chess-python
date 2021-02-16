@@ -2,6 +2,7 @@ import copy
 from src import utils
 
 # Set initial state
+
 MAP = [
     "BBBBBBBBBBB",
     "NNNNNNNNNNN",
@@ -11,22 +12,27 @@ MAP = [
     "NNNDDHDDNNN",
     "NNNNNNNNNNN",
 ]
-WIDTH = 7
-HEIGHT = 11
+ROWS = 7
+COLS = 11
 
 
-class BuffaloChess():
+class BuffaloChess:
     """
     B: Buffalo
     N: Background
     H: Hunter
     D: Dog
     """
-    BUFFALO_REWARD = 1
-    HUNTER_REWARD = -1
+
+    TURN_B = 1
+    TURN_H = -1
+
+    BUFFALO_REWARD = 100
+    HUNTER_REWARD = -100
 
     def __init__(self):
         self.reset()
+        self.turn = self.TURN_B
 
     def render(self):
         # Replace all N to blank
@@ -35,32 +41,30 @@ class BuffaloChess():
     def reset(self):
         """Restart game"""
         self.state = copy.deepcopy(MAP)
-        self.turn = 0   # Buffalo start first
+        self.turn = self.TURN_B  # Buffalo start first
         self.done = False
 
-    def is_done(self) -> bool:
-        """Return True if game is done, else return False
+    def is_done(self) -> (bool, int):
+        """Check is game state is terminal.
+        Returns bool with reward depending on who won
 
         Returns:
             bool: Game state is terminal
         """
         # if any buffalo reached to the end
         if "B" in self.state[6]:
-            return True
-
-        # if all buffalos hunted
-        for row in self.state:
-            if "B" in row:
-                break
+            return True, self.BUFFALO_REWARD
 
         # maybe all buffaloes cannot move
-        actions = self.get_possible_moves(0)
+        # contains all buffalo hunted
+        actions = self.get_possible_moves(self.TURN_B)
         if len(actions) == 0:
-            return True
-        return False
+            return True, self.HUNTER_REWARD
+
+        return False, 0
 
     def step(self, action: str):
-        """Returns next observation of game state after player action
+        """Take an action for the game. Returns observation after action.
 
         Args:
             action (str): String format action "1A4B"
@@ -96,21 +100,6 @@ class BuffaloChess():
         line[c_] = marker
         self.state[r_] = "".join(line)
 
-    def is_valid_turn(self, idx, turn) -> bool:
-        """Return True if marker move is valid for turn
-
-        Args:
-            turn ([type]): [description]
-
-        Returns:
-            bool: [description]
-        """
-        # if turn == 0, marker must be B
-
-        # elif turn == 1, marker must be H or D
-
-        # if None, marker must be B, H, or D
-
     def get_possible_moves(self, turn) -> list:
         """Returns all possible actions in string format
 
@@ -120,33 +109,80 @@ class BuffaloChess():
         Returns:
             actions (list): Contains string format actions
         """
+        markers = []
         # check turn
         # if buffalo's, append B to markers
+        if turn == self.TURN_B or turn == None:
+            markers.append("B")
         # if hunter's append H, D to markers
-        # if None, append all
+        elif turn == self.TURN_H or turn == None:
+            markers.append("H")
+            markers.append("D")
 
         actions = []
         # loop all state
-        # for each (r, c), inc
+        for r in range(ROWS):
+            for c in range(COLS):
+                if self.state[r][c] in markers:
+                    actions += self.get_actions(r, c)
         return actions
 
-    def inc(self, r, c) -> list:
-        """Returns all possible move positions
+    def get_actions(self, r, c) -> list:
+        """Returns all possible move from position
 
         Returns:
             actions(list): contains action in string format
         """
         actions = []
-        # if buffalo
-        # only down movement -> (+1, 0)
+        # buffalo
+        if self.state[r][c] == "B" and self.state[r + 1][c] == "N":
+            # movement -> (+1, 0)
+            action = utils.to_str(r, c, r + 1, c)
+            actions.append(action)
 
-        # if hunter
-        # all direction one step
-        # check is inbound
-        # able to move if B, N
+        # hunter
+        dirs = [-1, 0, 1]
+        if self.state[r][c] == "H":
+            for dr in dirs:
+                for dc in dirs:
+                    if dr == 0 and dc == 0:
+                        continue
 
-        # if dog
-        # hunter move iterative
-        # but not B
+                    if all(
+                        [
+                            0 <= r + dr < ROWS,
+                            0 <= c + dc < COLS,
+                        ]
+                    ):
+                        if not self.state[r + dr][c + dc] != "D":  # only if B or N
+                            continue
+
+                        action = utils.to_str(r, c, r + dr, c + dc)
+                        actions.append(action)
+
+        if self.state[r][c] == "D":
+            for dr in dirs:
+                for dc in dirs:
+                    if dr == 0 and dc == 0:
+                        continue
+
+                    next_r = r
+                    next_c = c
+                    while True:
+                        if all(
+                            [
+                                0 <= next_r + dr < ROWS,
+                                0 <= next_c + dc < COLS,
+                            ]
+                        ):
+                            # only if empty
+                            if not self.state[next_r + dr][next_c + dc] == "N":
+                                break
+                            action = utils.to_str(r, c, next_r + dr, next_c + dc)
+                            actions.append(action)
+                            next_r = next_r + dr
+                            next_c = next_c + dc
+                        else:
+                            break
 
         return actions
