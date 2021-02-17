@@ -1,6 +1,11 @@
 import copy
 from src import utils
 
+
+class NotValidActionError(Exception):
+    pass
+
+
 # Set initial state
 
 MAP = [
@@ -72,16 +77,28 @@ class BuffaloChess:
         Returns:
             tuple: observation(np.array), reward(int), done(bool), info(dict)
         """
-        # parse action string into array indexes
 
         # check if valid turn
         # check if valid movement
+        if not action in self.get_possible_moves(self.turn):
+            raise NotValidActionError
 
         # move if able
+        self.move(action)
         # next turn
+        self.next_turn()
 
         # check game is done
-        # if done, give reward
+        done, reward = self.is_done()
+
+        # s, r, d, _
+        return self.state, reward, done, {}
+
+    def next_turn(self):
+        if self.turn == self.TURN_B:
+            self.turn = self.TURN_H
+        else:
+            self.turn = self.TURN_B
 
     def move(self, action: str):
         """Run forced action
