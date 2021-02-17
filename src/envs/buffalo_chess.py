@@ -35,13 +35,29 @@ class BuffaloChess:
     BUFFALO_REWARD = 100
     HUNTER_REWARD = -100
 
-    def __init__(self):
+    def __init__(self, mode=False):
         self.reset()
         self.turn = self.TURN_B
+        self.mode = mode
 
     def render(self):
         # Replace all N to blank
-        return
+        if self.mode == "cli":
+            print("\n     Buffalo Chess\n")  # new line
+            print("-" * 23)
+            board = ""
+            for row in self.state:
+                line = " "
+                for marker in row:
+                    if marker == "N":
+                        line += ". "
+                    else:
+                        line += f"{marker} "
+                board += f"{line}\n"
+            print(board, end="")
+            print("-" * 23)
+            turn = "Buffalo" if self.turn == self.TURN_B else "Hunter"
+            print(f" Turn: {turn}")
 
     def reset(self):
         """Restart game"""
@@ -72,26 +88,19 @@ class BuffaloChess:
         """Take an action for the game. Returns observation after action.
 
         Args:
-            action (str): String format action "1A4B"
+            action (str): String format action, "1A4B"
 
         Returns:
-            tuple: observation(np.array), reward(int), done(bool), info(dict)
+            tuple: observation(list), reward(int), done(bool), info(dict)
         """
 
-        # check if valid turn
-        # check if valid movement
         if not action in self.get_possible_moves(self.turn):
-            raise NotValidActionError
-
-        # move if able
+            print("Not valid action")
+            return self.state, 0, False, {}
         self.move(action)
-        # next turn
         self.next_turn()
-
-        # check game is done
         done, reward = self.is_done()
 
-        # s, r, d, _
         return self.state, reward, done, {}
 
     def next_turn(self):
